@@ -1,0 +1,5 @@
+alter table public.catalogs          enable row level security;
+alter table public.products          enable row level security;
+alter table public.catalog_products  enable row level security;
+alter table public.profiles          enable row level security;
+alter table public.reports           enable row level security;

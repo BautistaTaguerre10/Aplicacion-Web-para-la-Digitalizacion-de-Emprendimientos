@@ -1,0 +1,72 @@
+-- 0) Extensión para gen_random_uuid() (en Supabase suele estar)
+create extension if not exists pgcrypto with schema extensions;
+
+-- 1) Tablas base que NO dependen de otras del mismo esquema
+create table if not exists public.catalogs (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  name text not null,
+  created_at timestamptz not null default now(),
+  is_public boolean not null default true
+);
+
+create table if not exists public.products (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  name text not null,
+  description text,
+  price numeric(12,2) not null check (price >= 0),
+  cost numeric(12,2) not null default 0 check (cost >= 0),
+  stock integer not null default 0 check (stock >= 0),
+  visible boolean not null default true,
+  created_at timestamptz not null default now(),
+  in_catalog boolean not null default false,
+  image_urls text[] not null default '{}',
+  scheduled_republish_at timestamptz
+);
+
+-- 2) Tablas que dependen de las anteriores
+create table if not exists public.catalog_products (
+  catalog_id uuid not null,
+  product_id uuid not null,
+  constraint catalog_products_pkey primary key (catalog_id, product_id),
+  constraint catalog_products_catalog_id_fkey
+    foreign key (catalog_id) references public.catalogs(id) on delete cascade,
+  constraint catalog_products_product_id_fkey
+    foreign key (product_id) references public.products(id) on delete cascade
+);
+
+create table if not exists public.profiles (
+  id uuid primary key,
+  name text,
+  email text,
+  phone text,
+  avatar_url text,
+  role text,
+  store_template_id text default 'modern',
+  store_bg_color text default '#FFFFFF',
+  store_primary_color text default '#1E40AF',
+  store_accent_color text default '#F3F4F6',
+  store_font_family text default 'PT Sans',
+  store_description text,
+  store_banner_url text,
+  constraint profiles_id_fkey
+    foreign key (id) references auth.users(id) on delete cascade
+);
+
+create table if not exists public.reports (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  report_type text not null,
+  generated_at timestamptz not null default now(),
+  content text not null,
+  criteria jsonb
+);
+
+-- 3) Índices útiles
+create index if not exists idx_catalogs_user on public.catalogs(user_id);
+create index if not exists idx_products_user on public.products(user_id);
+create index if not exists idx_products_visible on public.products(visible);
+create index if not exists idx_catalog_products_catalog on public.catalog_products(catalog_id);
+create index if not exists idx_catalog_products_product on public.catalog_products(product_id);
+create index if not exists idx_reports_user on public.reports(user_id);
