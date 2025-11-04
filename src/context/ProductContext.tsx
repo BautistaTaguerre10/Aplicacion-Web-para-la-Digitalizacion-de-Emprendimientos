@@ -234,24 +234,39 @@ export const ProductProvider = ({ children }: ProductProviderProps) => {
         return;
       }
 
+      // Only update image_urls when caller explicitly provides image arrays
+      const imagesProvided = (existingImageUrls && existingImageUrls.length > 0) || (imageFiles && imageFiles.length > 0);
+
       let newImageUrls: string[] = [];
-       if (imageFiles.length > 0) {
-         try {
-            newImageUrls = await Promise.all(imageFiles.map(file => uploadImage(file, user.id)));
-         } catch(error: any) {
-            toast.error('Error de Carga', { description: error.message });
-            setLoading(false);
-            return;
-         }
-       }
-      
-      const finalImageUrls = [...existingImageUrls, ...newImageUrls];
-      
-      if (finalImageUrls.length === 0) {
-        finalImageUrls.push('https://placehold.co/600x400.png');
+      if (imageFiles.length > 0) {
+        try {
+          newImageUrls = await Promise.all(imageFiles.map(file => uploadImage(file, user.id)));
+        } catch (error: any) {
+          toast.error('Error de Carga', { description: error.message });
+          setLoading(false);
+          return;
+        }
       }
 
-      let updateData: any = { ...updatedFields, image_urls: finalImageUrls };
+      let updateData: any = { ...updatedFields };
+
+      if (imagesProvided || newImageUrls.length > 0) {
+        const finalImageUrls = [...(existingImageUrls || []), ...newImageUrls];
+        if (finalImageUrls.length === 0) {
+          finalImageUrls.push('https://placehold.co/600x400.png');
+        }
+        updateData.image_urls = finalImageUrls;
+      } else {
+        // Extra safeguard: get current image_urls from DB and include them explicitly
+        const { data: currentRow } = await supabase
+          .from('products')
+          .select('image_urls')
+          .eq('id', productId)
+          .eq('user_id', user.id)
+          .single();
+        const current = (currentRow as any)?.image_urls as string[] | null | undefined;
+        updateData.image_urls = (current && current.length > 0) ? current : ['https://placehold.co/600x400.png'];
+      }
       
       const { data, error } = await supabase.from('products').update(updateData).eq('id', productId).eq('user_id', user.id).select().single();
 
@@ -259,7 +274,19 @@ export const ProductProvider = ({ children }: ProductProviderProps) => {
         toast.error('Error', { description: `No se pudo actualizar el producto: ${error.message}` });
       } else {
         toast.success('Éxito', { description: 'Producto actualizado.' });
-        setProducts(prevProducts => prevProducts.map(p => p.id === productId ? formatProduct(data) : p));
+        setProducts(prevProducts => prevProducts.map(p => {
+          if (p.id !== productId) return p;
+          const formatted = formatProduct(data);
+          // If no images were provided in this update and the DB returned empty/null image_urls,
+          // preserve the previous images from local state to avoid losing them on inline edits.
+          if (!(imagesProvided || newImageUrls.length > 0)) {
+            const returned = (data as any)?.image_urls as string[] | null | undefined;
+            if (!returned || returned.length === 0) {
+              formatted.image_urls = p.image_urls;
+            }
+          }
+          return formatted;
+        }));
       }
       setLoading(false);
   };
