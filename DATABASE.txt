@@ -1,0 +1,62 @@
+CREATE TABLE public.products (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  name text NOT NULL,
+  description text,
+  price numeric NOT NULL CHECK (price >= 0::numeric),
+  cost numeric NOT NULL DEFAULT 0 CHECK (cost >= 0::numeric),
+  stock integer NOT NULL DEFAULT 0 CHECK (stock >= 0),
+  visible boolean NOT NULL DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  in_catalog boolean NOT NULL DEFAULT false,
+  image_urls ARRAY NOT NULL DEFAULT '{}'::text[],
+  scheduled_republish_at timestamp with time zone,
+  CONSTRAINT products_pkey PRIMARY KEY (id),
+  CONSTRAINT products_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.profiles (
+  id uuid NOT NULL,
+  name text,
+  email text,
+  phone text,
+  avatar_url text,
+  role text,
+  store_template_id text DEFAULT 'modern'::text,
+  store_bg_color text DEFAULT '#FFFFFF'::text,
+  store_primary_color text DEFAULT '#1E40AF'::text,
+  store_accent_color text DEFAULT '#F3F4F6'::text,
+  store_font_family text DEFAULT 'PT Sans'::text,
+  store_description text,
+  store_banner_url text,
+  CONSTRAINT profiles_pkey PRIMARY KEY (id),
+  CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
+);
+
+CREATE TABLE public.catalogs (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  name text NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  is_public boolean NOT NULL DEFAULT true,
+  CONSTRAINT catalogs_pkey PRIMARY KEY (id),
+  CONSTRAINT catalogs_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
+
+CREATE TABLE public.catalog_products (
+  catalog_id uuid NOT NULL,
+  product_id uuid NOT NULL,
+  CONSTRAINT catalog_products_pkey PRIMARY KEY (catalog_id, product_id),
+  CONSTRAINT catalog_products_catalog_id_fkey FOREIGN KEY (catalog_id) REFERENCES public.catalogs(id),
+  CONSTRAINT catalog_products_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id)
+);
+
+CREATE TABLE public.reports (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  report_type text NOT NULL,
+  generated_at timestamp with time zone NOT NULL DEFAULT now(),
+  content text NOT NULL,
+  criteria jsonb,
+  CONSTRAINT reports_pkey PRIMARY KEY (id),
+  CONSTRAINT reports_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+)

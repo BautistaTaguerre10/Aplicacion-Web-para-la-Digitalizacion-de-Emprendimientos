@@ -1,0 +1,43 @@
+-- 1) Asegurá RLS en la tabla
+ALTER TABLE public.reports ENABLE ROW LEVEL SECURITY;
+-- Opcional:
+-- ALTER TABLE public.reports FORCE ROW LEVEL SECURITY;
+
+-- 2) Políticas según tu JSON
+
+-- DELETE: solo dueño
+DROP POLICY IF EXISTS reports_delete_owner_only ON public.reports;
+CREATE POLICY reports_delete_owner_only
+ON public.reports
+AS PERMISSIVE
+FOR DELETE
+TO public
+USING (user_id = auth.uid());
+
+-- INSERT: solo si user_id = auth.uid()
+DROP POLICY IF EXISTS reports_insert_owner_only ON public.reports;
+CREATE POLICY reports_insert_owner_only
+ON public.reports
+AS PERMISSIVE
+FOR INSERT
+TO public
+WITH CHECK (user_id = auth.uid());
+
+-- SELECT: solo dueño
+DROP POLICY IF EXISTS reports_select_owner_only ON public.reports;
+CREATE POLICY reports_select_owner_only
+ON public.reports
+AS PERMISSIVE
+FOR SELECT
+TO public
+USING (user_id = auth.uid());
+
+-- UPDATE: solo dueño
+DROP POLICY IF EXISTS reports_update_owner_only ON public.reports;
+CREATE POLICY reports_update_owner_only
+ON public.reports
+AS PERMISSIVE
+FOR UPDATE
+TO public
+USING (user_id = auth.uid())
+WITH CHECK (user_id = auth.uid());

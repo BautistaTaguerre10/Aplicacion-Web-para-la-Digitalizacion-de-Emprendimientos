@@ -1,0 +1,46 @@
+-- 1) Habilitar RLS
+ALTER TABLE public.catalogs ENABLE ROW LEVEL SECURITY;
+-- Opcional (refuerza la seguridad):
+-- ALTER TABLE public.catalogs FORCE ROW LEVEL SECURITY;
+
+-- 2) Políticas según el JSON
+
+-- DELETE: solo dueño
+DROP POLICY IF EXISTS catalogs_delete_owner_only ON public.catalogs;
+CREATE POLICY catalogs_delete_owner_only
+ON public.catalogs
+AS PERMISSIVE
+FOR DELETE
+TO public
+USING (user_id = auth.uid());
+
+-- INSERT: solo si user_id = auth.uid()
+DROP POLICY IF EXISTS catalogs_insert_owner_only ON public.catalogs;
+CREATE POLICY catalogs_insert_owner_only
+ON public.catalogs
+AS PERMISSIVE
+FOR INSERT
+TO public
+WITH CHECK (user_id = auth.uid());
+
+-- SELECT: públicos o dueño
+DROP POLICY IF EXISTS catalogs_select_public_or_owner ON public.catalogs;
+CREATE POLICY catalogs_select_public_or_owner
+ON public.catalogs
+AS PERMISSIVE
+FOR SELECT
+TO public
+USING ((is_public = true) OR (user_id = auth.uid()));
+
+-- UPDATE: solo dueño
+DROP POLICY IF EXISTS catalogs_update_owner_only ON public.catalogs;
+CREATE POLICY catalogs_update_owner_only
+ON public.catalogs
+AS PERMISSIVE
+FOR UPDATE
+TO public
+USING (user_id = auth.uid())
+WITH CHECK (user_id = auth.uid());
+
+-- 3) (Opcional) Índice para rendimiento en filtros por usuario
+CREATE INDEX IF NOT EXISTS idx_catalogs_user_id ON public.catalogs(user_id);
