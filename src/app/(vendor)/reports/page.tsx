@@ -46,6 +46,66 @@ type ReportRecord = {
     criteria: any;
 }
 
+const MarkdownReport = ({ content }: { content: string }) => {
+  return (
+    <div className="rounded-lg border bg-muted/40 px-4 py-4 sm:px-6 sm:py-5">
+      <ReactMarkdown
+        className="prose prose-sm sm:prose-base dark:prose-invert max-w-none prose-headings:font-headline prose-p:leading-relaxed prose-li:marker:text-muted-foreground"
+        components={{
+          h1: ({ node, ...props }) => (
+            <h1 className="text-2xl font-headline font-semibold mb-3 border-b pb-1" {...props} />
+          ),
+          h2: ({ node, ...props }) => (
+            <h2 className="text-xl font-headline font-semibold mt-4 mb-2" {...props} />
+          ),
+          h3: ({ node, ...props }) => (
+            <h3 className="text-lg font-semibold mt-3 mb-1" {...props} />
+          ),
+          p: ({ node, ...props }) => (
+            <p className="mb-2 leading-relaxed text-sm sm:text-base" {...props} />
+          ),
+          ul: ({ node, ...props }) => (
+            <ul className="list-disc pl-5 mb-3 space-y-1" {...props} />
+          ),
+          ol: ({ node, ...props }) => (
+            <ol className="list-decimal pl-5 mb-3 space-y-1" {...props} />
+          ),
+          li: ({ node, ...props }) => (
+            <li className="leading-relaxed" {...props} />
+          ),
+          blockquote: ({ node, ...props }) => (
+            <blockquote
+              className="border-l-4 border-primary/40 pl-3 ml-1 py-1 italic text-muted-foreground bg-muted/60 rounded-r-md"
+              {...props}
+            />
+          ),
+          code: ({ inline, children, ...props }: any) => {
+            if (inline) {
+              return (
+                <code
+                  className="rounded bg-muted px-1 py-0.5 text-[0.8rem] font-mono"
+                  {...props}
+                >
+                  {children}
+                </code>
+              );
+            }
+            return (
+              <pre className="rounded-md bg-black/90 px-3 py-2 text-xs sm:text-sm text-muted-foreground overflow-x-auto">
+                <code className="font-mono" {...props}>
+                  {children}
+                </code>
+              </pre>
+            );
+          },
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
+  );
+};
+
 export default function ReportsPage() {
     const { products } = useProduct();
     const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);

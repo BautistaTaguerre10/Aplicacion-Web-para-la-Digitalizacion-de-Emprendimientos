@@ -19,7 +19,7 @@ export async function generateReport(input: GenerateReportInput): Promise<Genera
   const model = genAI.getGenerativeModel({ model: MODEL_ID });
 
   const guard = `
-Eres un generador de JSON estricto.
+Eres un generador de JSON estricto pero deuvle en formato markdown
 Devuelve SOLO: {"reportContent":"<markdown aquí>"} (sin texto extra, sin backticks)
 que las respuesta se vena como en este ejpmlo:Reporte de Precios y Márgenes
 Este reporte analiza los precios y márgenes de los productos en el catálogo.
